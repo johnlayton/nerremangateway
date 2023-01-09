@@ -10,7 +10,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toList;
 import static org.nerremangateway.railway.Railway.Resolvers.successes;
+import static org.nerremangateway.railway.Railway.Throwing.tryTo;
 import static org.nerremangateway.railway.Railway.Transforms.*;
 
 public class Railway {
@@ -141,10 +143,9 @@ public class Railway {
                                                         final List<StudentMapping> mappings) {
             final StudentImportValidator validator = new StudentImportValidator(students);
             return students.stream()
-//                    .map(tryTo(validateDistinct(students), handler()))
-                    .map(Throwing.tryTo(validator::validateDistinct))
+                    .map(tryTo(validator::validateDistinct))
                     .map(onSuccessTry(this::validateEmail))
-                    .map(onSuccessTry(StudentImportService::createSuccess))
+                    .map(onSuccessTry(this::createSuccess))
                     .map(recover(Recovery.ifType(DuplicateImportException.class, duplicate -> {
                         return new StudentImportResultFailed(duplicate.getSource(), new ImportError(duplicate.getMessage()));
                     })))
@@ -152,9 +153,10 @@ public class Railway {
                         return new StudentImportResultFailed(duplicate.getSource(), new ImportError(duplicate.getMessage()));
                     })))
                     .flatMap(successes())
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
 
+//                    .map(tryTo(validateDistinct(students), handler()))
             //                    .map(onSuccessTry())
 //                    .map(onSuccessTry(this::validateEmail))
 //                    .map(onSuccessTry(validateEmail()))
@@ -179,7 +181,7 @@ public class Railway {
 //            return result;
         }
 
-        private static StudentImportResult createSuccess(StudentImport studentImport) {
+        private StudentImportResult createSuccess(StudentImport studentImport) {
             return new StudentImportResultSuccess(studentImport, new StudentRecord(
                     studentImport.email(),
                     studentImport.code(),
@@ -442,7 +444,7 @@ public class Railway {
         static <IS, OS, X extends Exception> Function<Result<IS, Exception>, Result<OS, Exception>> onSuccessTry(
                 Throwing.ThrowingFunction<IS, OS, X> throwingFunction
         ) {
-            return attempt(Throwing.tryTo(throwingFunction));
+            return attempt(tryTo(throwingFunction));
         }
 
         static <S, F, T> Function<Result<S, F>, Result<S, T>> onFailure(Function<F, T> function) {
