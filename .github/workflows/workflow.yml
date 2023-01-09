@@ -20,9 +20,14 @@ jobs:
         with:
           java-version: 17
 
-      - name: Gradle Build Trace Api
+      - name: Gradle Build
         uses: gradle/gradle-build-action@v1
         with:
           arguments: build
+
+      - name: Gradle Run Demo Application
+        uses: gradle/gradle-build-action@v1
+        with:
+          arguments: modules:application:run
 
 
